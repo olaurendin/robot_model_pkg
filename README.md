@@ -13,8 +13,7 @@ catkin_make
 ## Usage
 
 ```bash
-# In catkin_ws/src
-cd robot_model_pkg
+# In catkin_ws
 source devel/setup.bash
 roslaunch robot_model_pkg main.launch
 ```
@@ -30,6 +29,7 @@ Current velocity (x, m/s) and direction (theta_z, rad) commands are shown in the
 - scr folder: cpp ros node files.
 - urdf folder: Robot model description files.
 - worlds: gazebo simulation worlds.
+
 
 ## Robot model description
 
