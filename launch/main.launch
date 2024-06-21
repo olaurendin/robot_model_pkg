@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+
+<launch>
+
+<param name="velocity_multiplier" type="double" value="100.0" />
+<param name="angle_multiplier" type="double" value="0.785" />
+
+<!-- Spawn empty world -->
+<include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find robot_model_pkg)/worlds/obstacles.world"/>
+    <arg name="paused" value="true"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="true"/>
+    <arg name="headless" value="false"/>
+    <arg name="debug" value="false"/>
+</include>
+
+<!-- Load robot description -->
+<param name="robot_description" command="$(find xacro)/xacro '$(find robot_model_pkg)/urdf/robot.xacro'"/>
+<!-- Launch robot state publisher node -->
+<node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" output="screen" respawn="false"/>
+
+<!-- Spawn the robot model -->
+<node name="urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" 
+args="-urdf -model robot_model -param robot_description"/>
+
+<!-- Load motor controllers configurations -->
+<rosparam command="load"
+        file="$(find robot_model_pkg)/config/joints.yaml" />
+
+<!-- Spawn controllers -->
+<node name="bot_controller_spawner"
+    pkg="controller_manager"
+    type="spawner"
+    args="joint_state_controller
+            wheel1_velocity_controller
+            wheel2_velocity_controller
+            wheel3_velocity_controller
+            wheel4_velocity_controller
+            wheel3_angle_controller
+            wheel4_angle_controller" />
+
+<!-- Launch teleop_twist_keyboard in separate xterm window -->
+<node name="teleop_twist_keyboard" pkg="teleop_twist_keyboard" type="teleop_twist_keyboard.py" launch-prefix="xterm -e">
+    <remap from="/cmd_vel" to="/robot_command"/>
+</node>
+
+<!-- Launch robot motion controller
+<node name="robot_controller" pkg="robot_model_pkg" type="robot_controller" output="screen"/>
+ -->
+
+
+
+</launch>

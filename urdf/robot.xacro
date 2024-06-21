@@ -1,0 +1,417 @@
+<?xml version="1.0"?>
+
+<!-- ###############################################################################    -->
+<!-- Physical model of a front-steering 4 wheeled robot                                 -->
+<!-- Adapted from the 4-wheeled robot of Aleksandar Haber                               -->
+<!-- ###############################################################################    -->
+
+<robot name="differential_drive_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<!-- Body dimensions -->
+<xacro:property name="body_link_x_dim" value="1"/>
+<xacro:property name="body_link_y_dim" value="0.6"/>
+<xacro:property name="body_link_z_dim" value="0.3"/>
+
+<!-- Wheel dimensions -->
+<xacro:property name="wheel_link_radius" value="0.15"/>
+<xacro:property name="wheel_link_length" value="0.1"/>
+<xacro:property name="wheel_link_location" value="-0.1"/>
+
+<!-- Material density -->
+<!-- Aluminium alloy -->
+<xacro:property name="body_density" value="10.0"/> 
+<xacro:property name="wheel_density" value="1000.0"/>
+
+<!-- Pi constant -->
+<xacro:property name="pi_const" value="3.14159265"/>
+
+<!-- Robot body and wheel mass -->
+<xacro:property name="body_mass" value="${body_density*body_link_x_dim*body_link_y_dim*body_link_z_dim}"/>
+<xacro:property name="wheel_mass" value="${wheel_density*pi_const*wheel_link_radius*wheel_link_radius*wheel_link_length}"/>
+
+<!-- Moments of inertia of the wheel -->
+<xacro:property name="Iz_wheel" value="${0.5*wheel_mass*wheel_link_radius*wheel_link_radius}"/>
+<xacro:property name="I_wheel" value="${(1.0/12.0)*wheel_mass*(3.0*wheel_link_radius*wheel_link_radius+wheel_link_length*wheel_link_length)}"/>
+
+<!-- Wheels inertia section macro -->
+<xacro:macro name="inertia_wheel">
+        <inertial>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <mass value="${wheel_mass}"/>
+        <inertia ixx="${I_wheel}" ixy="0.0" ixz="0.0" iyy="${I_wheel}" iyz="0.0" izz="${Iz_wheel}" />
+        </inertial>
+</xacro:macro>
+
+<!-- Gazebo options and motion control driver -->
+<xacro:include filename="$(find robot_model_pkg)/urdf/robot.gazebo" />
+
+<!-- ########################################################   -->
+<!-- Links and joints definition                                -->
+<!-- ########################################################   -->
+
+<!-- Fixed "dummy" link -->
+<link name="dummy">
+</link>
+<joint name="dummy_joint" type="fixed">
+        <parent link="dummy"/>
+        <child link="body_link"/>
+        <origin xyz="0 0 ${body_link_z_dim}" rpy="0 0 0"/>
+</joint>
+
+
+<!-- ########################################################   -->
+<!-- Body link of the robot                                     -->
+<!-- ########################################################   -->
+
+<link name="body_link">
+        <visual>
+                <geometry>
+                        <box size="${body_link_x_dim} ${body_link_y_dim} ${body_link_z_dim}"/>
+                </geometry>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        </visual>
+
+        <!--
+        <collision>
+                <geometry>
+                        <box size="${body_link_x_dim} ${body_link_y_dim} ${body_link_z_dim}"/>
+                </geometry>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        </collision>
+        -->
+        
+        <inertial>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+        <mass value="${body_mass}"/>
+        <inertia
+        ixx="${(1/12)*body_mass*(body_link_y_dim*body_link_y_dim+body_link_z_dim*body_link_z_dim)}" 
+        ixy="0"
+        ixz="0"
+        iyy="${(1/12)*body_mass*(body_link_x_dim*body_link_x_dim+body_link_z_dim*body_link_z_dim)}" 
+        iyz="0"
+        izz="${(1/12)*body_mass*(body_link_x_dim*body_link_x_dim+body_link_y_dim*body_link_y_dim)}" 
+        />
+        </inertial>
+</link>
+
+
+<!-- ########################################################   -->
+<!-- Back right wheel link and joint (wheel1)                   -->
+<!-- ########################################################   -->
+
+<joint name="wheel1_joint" type="continuous">
+        <parent link="body_link"/>
+        <child link="wheel1_link"/>
+        <origin xyz="${-body_link_x_dim/2+1.2*wheel_link_radius} ${-body_link_y_dim/2-wheel_link_length/2} ${wheel_link_location}" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="1000" velocity="1000"/>
+        <dynamics damping="1.0" friction="1.0"/>
+</joint>
+
+<link name="wheel1_link">
+        <visual>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        </visual>
+
+        
+        <collision>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        </collision>
+        
+
+        <xacro:inertia_wheel />
+</link>
+
+  <transmission name="wheel1_velocity">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel1_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel1_velocity_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+
+<!-- ########################################################   -->
+<!-- Back left wheel link and joint (wheel2)                    -->
+<!-- ########################################################   -->
+
+<link name="wheel2_link">
+        <visual>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        </visual>
+
+        
+        <collision>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        </collision>
+        
+
+        <xacro:inertia_wheel />
+</link>
+
+<joint name="wheel2_joint" type="continuous">
+        <parent link="body_link"/>
+        <child link="wheel2_link"/>
+        <origin xyz="${-body_link_x_dim/2+1.2*wheel_link_radius} ${body_link_y_dim/2+wheel_link_length/2} ${wheel_link_location}" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="1000" velocity="1000"/>
+        <dynamics damping="1.0" friction="1.0"/>
+</joint>
+
+  <transmission name="wheel2_velocity">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel2_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel2_velocity_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+<!-- ########################################################   -->
+<!-- Front right wheel link and joint (wheel3)                  -->
+<!-- ########################################################   -->
+
+<link name="wheel3_angle_link">
+        <visual>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="0 0 1.570795" xyz="0 0 0"/>
+        </visual>
+
+        <!--
+        <collision>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="0 0 1.570795" xyz="0 0 0"/>
+        </collision>
+        -->
+
+        <xacro:inertia_wheel />
+        
+</link>
+
+<joint name="wheel3_angle_joint" type="continuous">
+        <parent link="body_link"/>
+        <child link="wheel3_angle_link"/>
+        <origin xyz="${body_link_x_dim/2-1.2*wheel_link_radius} ${-body_link_y_dim/2-wheel_link_length/2} ${wheel_link_location}" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="1000" velocity="1000"/>
+        <dynamics damping="1.0" friction="1.0"/>
+</joint>
+
+    <transmission name="wheel3_angle">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel3_angle_joint">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel3_angle_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+
+<link name="wheel3_link">
+        <visual>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        </visual>
+
+        
+        <collision>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        </collision>
+        
+
+        <xacro:inertia_wheel />
+</link>
+
+<joint name="wheel3_joint" type="continuous">
+        <parent link="wheel3_angle_link"/>
+        <child link="wheel3_link"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="1000" velocity="1000"/>
+        <dynamics damping="1.0" friction="1.0"/>
+</joint>
+
+  <transmission name="wheel3_velocity">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel3_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel3_velocity_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+<!-- ########################################################   -->
+<!-- Front left wheel link and joint (wheel4)                   -->
+<!-- ########################################################   -->
+
+<link name="wheel4_angle_link">
+        <visual>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="0 0 1.570795" xyz="0 0 0"/>
+        </visual>
+
+        <!--
+        <collision>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="0 0 1.570795" xyz="0 0 0"/>
+        </collision>
+        -->
+
+        <xacro:inertia_wheel />
+        
+</link>
+
+<joint name="wheel4_angle_joint" type="continuous">
+        <parent link="body_link"/>
+        <child link="wheel4_angle_link"/>
+        <origin xyz="${body_link_x_dim/2-1.2*wheel_link_radius} ${body_link_y_dim/2+wheel_link_length/2} ${wheel_link_location}" rpy="0 0 0"/>
+        <axis xyz="0 0 1"/>
+        <limit effort="1000" velocity="1000"/>
+        <dynamics damping="1.0" friction="1.0"/>
+</joint>
+
+    <transmission name="wheel4_angle">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel4_angle_joint">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel4_angle_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+<link name="wheel4_link">
+        <visual>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        </visual>
+
+        
+        <collision>
+                <geometry>
+                        <cylinder length="${wheel_link_length}" radius="${wheel_link_radius}"/>
+                </geometry>
+        <origin rpy="1.570795 0 0" xyz="0 0 0"/>
+        </collision>
+        
+
+        <xacro:inertia_wheel />
+</link>
+
+<joint name="wheel4_joint" type="continuous">
+        <parent link="wheel4_angle_link"/>
+        <child link="wheel4_link"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <axis xyz="0 1 0"/>
+        <limit effort="1000" velocity="1000"/>
+        <dynamics damping="1.0" friction="1.0"/>
+</joint>
+
+  <transmission name="wheel4_velocity">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="wheel4_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="wheel4_velocity_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+
+<!-- ########################################################   -->
+<!-- 2D LiDaR joint and link                                    -->
+<!-- ########################################################   -->
+
+
+
+    <joint name="laser_joint" type="fixed">
+        <parent link="body_link"/>
+        <child link="laser_frame"/>
+        <origin xyz="0 0 ${0.5*body_link_z_dim}" rpy="0 0 0"/>
+    </joint>
+
+ 
+
+    <link name="laser_frame">
+        <visual>
+            <geometry>
+                <cylinder radius="0.05" length="0.04"/>
+            </geometry>
+        </visual>
+
+        <collision>
+            <geometry>
+                <cylinder radius="0.05" length="0.04"/>
+            </geometry>
+        </collision>
+
+        <xacro:inertia_wheel />
+
+    </link>
+
+    <gazebo reference="laser_frame">
+        <material>Gazebo/Red</material>
+
+        <sensor name="laser" type="ray">
+            <pose> 0 0 0 0 0 0 </pose>
+            <visualize>true</visualize>
+            <update_rate>10</update_rate>
+            <ray>
+                <scan>
+                    <horizontal>
+                        <samples>360</samples>
+                        <min_angle>-3.14</min_angle>
+                        <max_angle>3.14</max_angle>
+                    </horizontal>
+                </scan>
+                <range>
+                    <min>0.5</min>
+                    <max>12</max>
+                </range>
+            </ray>
+
+            <plugin name="laser_controller" filename="libgazebo_ros_ray_sensor.so">
+                <ros>
+                    <argument>~/out:=scan</argument>
+                </ros>
+                <output_type>sensor_msgs/LaserScan</output_type>
+                <frame_name>laser_frame</frame_name>
+            </plugin>
+        </sensor>
+
+    </gazebo>
+
+
+</robot>
